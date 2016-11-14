@@ -1,17 +1,17 @@
 <launch>
 
-  <arg name="FPS"               default="50" />     <!-- Camera framerate -->
-  <arg name="resolution_width"  default="320" />    <!-- Camera resolution width -->
-  <arg name="resolution_height" default="240" />    <!-- Camera resolution height -->
+  <arg name="FPS"               default="30" />     <!-- Camera framerate -->
+  <arg name="resolution_width"  default="640" />    <!-- Camera resolution width -->
+  <arg name="resolution_height" default="480" />    <!-- Camera resolution height -->
 
-  <!-- duo camera node -->
+  <!-- Get images From SLAM Dunk which is already Running
   <include file="$(find duo3d_ros)/launch/duo.launch">
     <arg name="FPS"                 value="$(arg FPS)" />
     <arg name="resolution_width"    value="$(arg resolution_width)" />
     <arg name="resolution_height"   value="$(arg resolution_height)" />
-  </include>
+  </include>-->
 
- <!-- visual odometry node --> 
+ <!-- visual odometry node -->
  <include file="$(find duo_vio)/launch/vio.launch">
     <arg name="resolution_width"    value="$(arg resolution_width)" />
     <arg name="resolution_height"   value="$(arg resolution_height)" />

@@ -157,6 +157,8 @@ class DuoVio {
     std::vector<AnchorPose> anchor_poses;
 
     void vioSensorMsgCb(const ait_ros_messages::VioSensorMsg &msg);
+    void rightImageMsgCb(const sensor_msgs::ImageMessage &msg);
+    void leftImageMsgCb(const sensor_msgs::ImageMessage &msg);
     void deviceSerialNrCb(const std_msgs::String &msg);
     void loadCustomCameraCalibration(const std::string calib_path);
     void update(double dt, const ait_ros_messages::VioSensorMsg &msg, bool debug_publish, bool show_image, bool reset);

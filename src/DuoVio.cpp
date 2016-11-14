@@ -69,6 +69,9 @@ DuoVio::DuoVio() :
     noiseParams = {};
     vioParams = {};
 
+    left_image_sub = nh_.subscribe("/left_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::leftImageMsgCb, this);
+    right_image_sub = nh_.subscribe("/right_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::rightImageMsgCb, this);
+
     vio_sensor_sub = nh_.subscribe("/vio_sensor", VIO_SENSOR_QUEUE_SIZE, &DuoVio::vioSensorMsgCb, this);
     device_serial_nr_sub = nh_.subscribe("/vio_sensor/device_serial_nr", 1, &DuoVio::deviceSerialNrCb, this);
     reset_sub = nh_.subscribe("reset", 1, &DuoVio::resetCb, this);
@@ -237,6 +240,18 @@ DuoVio::~DuoVio() {
         printf("Writing estimated IMU biases to %s\n", file_path.c_str());
     }
 }
+
+
+void DuoVio::leftImageMsgCb(const sensor_msgs::ImageMessage& msg) {
+//Receive left camera image
+printf("Received left image!!\n");
+}
+
+void DuoVio::rightImageMsgCb(const sensor_msgs::ImageMessage& msg) {
+//Receive right camera image
+printf("Received right image!!\n");
+}
+
 
 void DuoVio::vioSensorMsgCb(const ait_ros_messages::VioSensorMsg& msg) {
     if (!got_device_serial_nr)
