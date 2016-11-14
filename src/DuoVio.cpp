@@ -242,12 +242,12 @@ DuoVio::~DuoVio() {
 }
 
 
-void DuoVio::leftImageMsgCb(const sensor_msgs::ImageMessage& msg) {
+void DuoVio::leftImageMsgCb(const sensor_msgs::Image &msg) {
 //Receive left camera image
 printf("Received left image!!\n");
 }
 
-void DuoVio::rightImageMsgCb(const sensor_msgs::ImageMessage& msg) {
+void DuoVio::rightImageMsgCb(const sensor_msgs::Image &msg) {
 //Receive right camera image
 printf("Received right image!!\n");
 }
