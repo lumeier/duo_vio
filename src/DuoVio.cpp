@@ -71,6 +71,7 @@ DuoVio::DuoVio() :
 
     left_image_sub = nh_.subscribe("/left_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::leftImageMsgCb, this);
     right_image_sub = nh_.subscribe("/right_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::rightImageMsgCb, this);
+    imu_sub = nh_.subscribe("/imu", VIO_SENSOR_QUEUE_SIZE, &DuoVio::imuCb, this);
 
     vio_sensor_sub = nh_.subscribe("/vio_sensor", VIO_SENSOR_QUEUE_SIZE, &DuoVio::vioSensorMsgCb, this);
     device_serial_nr_sub = nh_.subscribe("/vio_sensor/device_serial_nr", 1, &DuoVio::deviceSerialNrCb, this);
@@ -244,12 +245,23 @@ DuoVio::~DuoVio() {
 
 void DuoVio::leftImageMsgCb(const sensor_msgs::Image &msg) {
 //Receive left camera image
-printf("Received left image!!\n");
+new_left=1;
 }
 
 void DuoVio::rightImageMsgCb(const sensor_msgs::Image &msg) {
 //Receive right camera image
-printf("Received right image!!\n");
+new_right=1;
+}
+
+void DuoVio::imuCb(const sensor_msgs::Imu &msg){
+//Receive IMU messages do Prediction and do Update if images are available
+if (new_left==1 && new_right==1)
+  {
+    //Check for timestamps
+    printf("New left and right image\n");
+    new_right=0;
+    new_left=0;
+  }
 }
 
 

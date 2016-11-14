@@ -94,6 +94,13 @@ class DuoVio {
  private:
     VIO vio;
 
+
+    sensor_msgs::Image lastImgLeft;
+    sensor_msgs::Image lastImgRight;
+
+    bool new_left=0;
+    bool new_right=0;
+
     // Visualization topics
     ros::Publisher vio_vis_pub;
     ros::Publisher vio_vis_reset_pub;
@@ -119,6 +126,7 @@ class DuoVio {
     ros::Subscriber vio_sensor_sub;
     ros::Subscriber left_image_sub;
     ros::Subscriber right_image_sub;
+    ros::Subscriber imu_sub;
     ros::Subscriber device_serial_nr_sub;
     std::string device_serial_nr;
     bool got_device_serial_nr;
