@@ -117,6 +117,8 @@ class DuoVio {
     bool use_dark_current;
 
     ros::Subscriber vio_sensor_sub;
+    ros::Subscriber left_image_sub;
+    ros::Subscriber right_image_sub;
     ros::Subscriber device_serial_nr_sub;
     std::string device_serial_nr;
     bool got_device_serial_nr;
