@@ -102,7 +102,7 @@ class DuoVio {
     sensor_msgs::Image lastImgRight;
 
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> SyncPolicy;
-    void ImageSetCb(const ImageConstPtr& img_l, const ImageConstPtr& img_r);
+    void ImageSetCb(const sensor_msgs::ImageConstPtr& msg_img_l, const sensor_msgs::ImageConstPtr& msg_img_r);
     bool new_left=0;
     bool new_right=0;
 

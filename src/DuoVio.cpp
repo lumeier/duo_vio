@@ -69,11 +69,8 @@ DuoVio::DuoVio() :
     noiseParams = {};
     vioParams = {};
 
-    // left_image_sub = nh_.subscribe("/left_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::leftImageMsgCb, this);
-    // right_image_sub = nh_.subscribe("/right_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::rightImageMsgCb, this);
-
-    left_image_sub = nh_.subscribe("/left_grayscale/image",10);
-    right_image_sub = nh_.subscribe("/right_grayscale/image",10);
+    left_image_sub = nh_.subscribe("/left_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::leftImageMsgCb, this);
+    right_image_sub = nh_.subscribe("/right_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::rightImageMsgCb, this);
 
     TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> sync(left_image_sub, right_image_sub, 10);
     sync.registerCallback(boost::bind(&ImageSetCb(), _1, _2));
@@ -250,17 +247,17 @@ DuoVio::~DuoVio() {
 }
 
 
-// void DuoVio::leftImageMsgCb(const sensor_msgs::Image &msg) {
-// //Receive left camera image
-// new_left=1;
-// }
-//
-// void DuoVio::rightImageMsgCb(const sensor_msgs::Image &msg) {
-// //Receive right camera image
-// new_right=1;
-// }
+void DuoVio::leftImageMsgCb(const sensor_msgs::Image &msg) {
+//Receive left camera image
+new_left=1;
+}
 
-void DuoVio::ImageSetCb(const ImageConstPtr& img_l, const ImageConstPtr& img_r){
+void DuoVio::rightImageMsgCb(const sensor_msgs::Image &msg) {
+//Receive right camera image
+new_right=1;
+}
+
+void DuoVio::ImageSetCb(const ImageConstPtr& msg_img_l, const ImageConstPtr& msg_img_r){
     printf("Synchronized image!!\n", );
 }
 
