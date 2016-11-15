@@ -86,6 +86,9 @@
 
 #include "Precision.h"
 
+#include <message_filters/time_synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
+
 class DuoVio {
  public:
     DuoVio();
@@ -98,6 +101,8 @@ class DuoVio {
     sensor_msgs::Image lastImgLeft;
     sensor_msgs::Image lastImgRight;
 
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> SyncPolicy;
+    void ImageSetCb(const ImageConstPtr& img_l, const ImageConstPtr& img_r);
     bool new_left=0;
     bool new_right=0;
 
