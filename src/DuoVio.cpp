@@ -72,7 +72,7 @@ DuoVio::DuoVio() :
     left_image_sub = nh_.subscribe("/left_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::leftImageMsgCb, this);
     right_image_sub = nh_.subscribe("/right_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::rightImageMsgCb, this);
 
-    TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> sync(left_image_sub, right_image_sub, 10);
+    messge_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> sync(left_image_sub, right_image_sub, 10);
     sync.registerCallback(boost::bind(&ImageSetCb(), _1, _2));
 
     imu_sub = nh_.subscribe("/imu", VIO_SENSOR_QUEUE_SIZE, &DuoVio::imuCb, this);
