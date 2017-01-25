@@ -87,7 +87,10 @@
 #include "Precision.h"
 
 #include <message_filters/time_synchronizer.h>
+#include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
+
+#include <cv_bridge/cv_bridge.h>
 
 class DuoVio {
  public:
@@ -97,16 +100,19 @@ class DuoVio {
  private:
     VIO vio;
 
-
-    sensor_msgs::Image lastImgLeft;
-    sensor_msgs::Image lastImgRight;
-
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> SyncPolicy;
     void ImageSetCb(const sensor_msgs::ImageConstPtr& msg_img_l, const sensor_msgs::ImageConstPtr& msg_img_r);
-    bool new_left=0;
-    bool new_right=0;
-
-    // Visualization topics
+    void ImageMsgCb(const sensor_msgs::Image::ConstPtr &msg, const bool side);
+    const bool left_camera=0;
+    const bool right_camera=1;
+    sensor_msgs::Image last_img_left;
+    sensor_msgs::Image last_img_right;
+	
+    cv_bridge::CvImagePtr left_image_;
+    cv_bridge::CvImagePtr right_image_;
+    
+    bool image_pair_available_=0;
+    
+// Visualization topics
     ros::Publisher vio_vis_pub;
     ros::Publisher vio_vis_reset_pub;
 
@@ -129,8 +135,10 @@ class DuoVio {
     bool use_dark_current;
 
     ros::Subscriber vio_sensor_sub;
-    ros::Subscriber left_image_sub;
-    ros::Subscriber right_image_sub;
+	ros::Subscriber left_image_test;
+	ros::Subscriber right_image_test;
+    //ros::Subscriber left_image_sub;
+    //ros::Subscriber right_image_sub;
     ros::Subscriber imu_sub;
     ros::Subscriber device_serial_nr_sub;
     std::string device_serial_nr;
@@ -175,9 +183,11 @@ class DuoVio {
     void rightImageMsgCb(const sensor_msgs::Image &msg);
     void leftImageMsgCb(const sensor_msgs::Image &msg);
     void imuCb(const sensor_msgs::Imu &msg);
+    void imgPairCb(const sensor_msgs::ImageConstPtr &left_img, const sensor_msgs::ImageConstPtr &right_img);
     void deviceSerialNrCb(const std_msgs::String &msg);
     void loadCustomCameraCalibration(const std::string calib_path);
     void update(double dt, const ait_ros_messages::VioSensorMsg &msg, bool debug_publish, bool show_image, bool reset);
+    void updateSlamdunk(double dt, const ait_ros_messages::VioSensorMsg &msg, bool debug_publish, bool show_image, bool reset);
 
     void getIMUData(const sensor_msgs::Imu& imu, VIOMeasurements& meas);
 

@@ -42,12 +42,13 @@
 #include <stdio.h>
 #include <time.h>
 
-#include <cv_bridge/cv_bridge.h>
+
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point32.h>
 #include <visualization_msgs/Marker.h>
 #include <std_msgs/Float32.h>
 #include <trackFeatures.h>
+#include <typeinfo>
 
 
 static const int VIO_SENSOR_QUEUE_SIZE = 30;
@@ -68,12 +69,15 @@ DuoVio::DuoVio() :
     cameraParams = { {}, {}};
     noiseParams = {};
     vioParams = {};
+	
+	left_image_test=nh_.subscribe<sensor_msgs::Image>("/left_grayscale/image",VIO_SENSOR_QUEUE_SIZE, boost::bind(&DuoVio::ImageMsgCb,this,_1,left_camera));
+	right_image_test=nh_.subscribe<sensor_msgs::Image>("/right_grayscale/image",VIO_SENSOR_QUEUE_SIZE, boost::bind(&DuoVio::ImageMsgCb,this,_1,right_camera));
 
-    left_image_sub = nh_.subscribe("/left_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::leftImageMsgCb, this);
-    right_image_sub = nh_.subscribe("/right_grayscale/image", VIO_SENSOR_QUEUE_SIZE, &DuoVio::rightImageMsgCb, this);
-
-    messge_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> sync(left_image_sub, right_image_sub, 10);
-    sync.registerCallback(boost::bind(&ImageSetCb(), _1, _2));
+	message_filters::Subscriber<sensor_msgs::Image> left_image_sub(nh_, "/left_grayscale/image",1);
+	message_filters::Subscriber<sensor_msgs::Image> right_image_sub(nh_, "/right_grayscale/image",1);
+	//typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::ImageConstPtr, sensor_msgs::ImageConstPtr> SyncPolicy;
+	//message_filters::Synchronizer<SyncPolicy> sync(SyncPolicy(10),left_image_sub, right_image_sub);
+    //sync.registerCallback(boost::bind(&DuoVio::ImageSetCb,this, _1, _2));
 
     imu_sub = nh_.subscribe("/imu", VIO_SENSOR_QUEUE_SIZE, &DuoVio::imuCb, this);
 
@@ -246,30 +250,49 @@ DuoVio::~DuoVio() {
     }
 }
 
+void DuoVio::ImageMsgCb(const sensor_msgs::Image::ConstPtr &msg, const bool side) {
+//input variable side defines if left or right camera - 0: left / 1: right
+if(side==0)//if left camera
+	{
+	last_img_left=*msg;
+	}
+else if (side==1)//if right camera
+	{
+	//printf("Right image!! Stamp:%d secs %d nanos side: %d\n",msg->header.stamp.sec,msg->header.stamp.nsec,side);
+	last_img_right=*msg;
+	}
 
-void DuoVio::leftImageMsgCb(const sensor_msgs::Image &msg) {
-//Receive left camera image
-new_left=1;
+if (last_img_left.header.stamp.sec==last_img_right.header.stamp.sec && last_img_left.header.stamp.nsec==last_img_right.header.stamp.nsec)//Check for timestamps
+	{
+	//Synced left and right images were received, convert to opencv
+	printf("Image nr.: left: %d right: %d\n",last_img_right.header.seq,last_img_right.header.seq);
+
+        cv_bridge::CvImagePtr left_image_;
+        cv_bridge::CvImagePtr right_image_;
+        try {
+            left_image_ = cv_bridge::toCvCopy(last_img_right, "mono8");
+            right_image_ = cv_bridge::toCvCopy(last_img_left, "mono8");
+	    printf("Images succesfully converted to OpenCV\n");
+        } catch (cv_bridge::Exception& e) {
+            ROS_ERROR("Error while converting ROS image to OpenCV: %s", e.what());
+            return;
+        }
+
+	printf("Rows: %d Colls: %d\n", left_image_->image.rows,left_image_->image.cols);
+
+	image_pair_available_=1;
+	}
 }
 
-void DuoVio::rightImageMsgCb(const sensor_msgs::Image &msg) {
-//Receive right camera image
-new_right=1;
-}
-
-void DuoVio::ImageSetCb(const ImageConstPtr& msg_img_l, const ImageConstPtr& msg_img_r){
-    printf("Synchronized image!!\n", );
-}
 
 void DuoVio::imuCb(const sensor_msgs::Imu &msg){
-//Receive IMU messages do Prediction and do Update if images are available
-if (new_left==1 && new_right==1)
-  {
-    //Check for timestamps
-    printf("New left and right image\n");
-    new_right=0;
-    new_left=0;
-  }
+	//Receive IMU messages and do prediction
+	printf("IMU received: linear: x: %lf y: %lf z: %lf || angular: x: %lf y: %lf z: %lf		\n",msg.linear_acceleration.x,msg.linear_acceleration.y,msg.linear_acceleration.z,msg.angular_velocity.x,msg.angular_velocity.y,msg.angular_velocity.z);
+
+
+
+
+
 }
 
 
@@ -466,6 +489,139 @@ void DuoVio::update(double dt, const ait_ros_messages::VioSensorMsg &msg, bool u
         imulp_.get(meas);
         vio.predict(meas, dt / msg.imu.size());
     }
+
+    sensor_msgs::Imu smoothed;
+    smoothed.header = msg.header;
+    smoothed.linear_acceleration.x = meas.acc[0];
+    smoothed.linear_acceleration.y = meas.acc[1];
+    smoothed.linear_acceleration.z = meas.acc[2];
+    smoothed.angular_velocity.x = meas.gyr[0];
+    smoothed.angular_velocity.y = meas.gyr[1];
+    smoothed.angular_velocity.z = meas.gyr[2];
+
+    smoothed_imu_pub.publish(smoothed);
+
+    if ((auto_subsample || vio_cnt % vision_subsample == 0) && !msg.left_image.data.empty() && !msg.right_image.data.empty()) {
+        cv_bridge::CvImagePtr left_image;
+        cv_bridge::CvImagePtr right_image;
+        try {
+            left_image = cv_bridge::toCvCopy(msg.left_image, "mono8");
+            right_image = cv_bridge::toCvCopy(msg.right_image, "mono8");
+        } catch (cv_bridge::Exception& e) {
+            ROS_ERROR("Error while converting ROS image to OpenCV: %s", e.what());
+            return;
+        }
+
+        //*********************************************************************
+        // Point tracking
+        //*********************************************************************
+
+        ros::Time tic_feature_tracking = ros::Time::now();
+
+        cv::Mat left, right;
+        if (use_dark_current) {
+            left = left_image->image - darkCurrentL;
+            right = right_image->image - darkCurrentR;
+        } else {
+            left = left_image->image;
+            right = right_image->image;
+        }
+
+        trackFeatures(left, right, features_l, features_r, update_vec_, 1+vioParams.full_stereo);
+
+        for (int i = 0; i < features_l.size(); i++) {
+            z_all_l[2*i + 0] = features_l[i].x;
+            z_all_l[2*i + 1] = features_l[i].y;
+
+            z_all_r[2*i + 0] = features_r[i].x;
+            z_all_r[2*i + 1] = features_r[i].y;
+        }
+
+        double duration_feature_tracking = (ros::Time::now() - tic_feature_tracking).toSec();
+        std_msgs::Float32 duration_feature_tracking_msg;
+        duration_feature_tracking_msg.data = duration_feature_tracking;
+        timing_feature_tracking_pub.publish(duration_feature_tracking_msg);
+
+        //*********************************************************************
+        // SLAM update
+        //*********************************************************************
+        vio.update(update_vec_, z_all_l, z_all_r, robot_state, map, anchor_poses, delayedStatus);
+
+        camera_tf.setOrigin(tf::Vector3(robot_state.pos[0], robot_state.pos[1], robot_state.pos[2]));
+        camera_tf.setRotation(tf::Quaternion(robot_state.att[0], robot_state.att[1], robot_state.att[2], robot_state.att[3]));
+        tf_broadcaster.sendTransform(tf::StampedTransform(camera_tf, ros::Time::now(), "world", "camera"));
+
+        body_tf.setRotation(cam2body);
+        tf_broadcaster.sendTransform(tf::StampedTransform(body_tf, ros::Time::now(), "camera", "body"));
+
+        geometry_msgs::Pose pose;
+        pose.position.x = robot_state.pos[0];
+        pose.position.y = robot_state.pos[1];
+        pose.position.z = robot_state.pos[2];
+        pose.orientation.x = robot_state.att[0];
+        pose.orientation.y = robot_state.att[1];
+        pose.orientation.z = robot_state.att[2];
+        pose.orientation.w = robot_state.att[3];
+        pose_pub.publish(pose);
+
+        geometry_msgs::Vector3 vel;
+        vel.x = robot_state.vel[0];
+        vel.y = robot_state.vel[1];
+        vel.z = robot_state.vel[2];
+        vel_pub.publish(vel);
+
+        double duration_SLAM = (ros::Time::now() - tic_SLAM).toSec() - duration_feature_tracking;
+        std_msgs::Float32 duration_SLAM_msg;
+        duration_SLAM_msg.data = duration_SLAM;
+        timing_SLAM_pub.publish(duration_SLAM_msg);
+
+        dist += sqrt(
+                (robot_state.pos[0] - last_pos[0]) * (robot_state.pos[0] - last_pos[0])
+                        + (robot_state.pos[1] - last_pos[1]) * (robot_state.pos[1] - last_pos[1])
+                        + (robot_state.pos[2] - last_pos[2]) * (robot_state.pos[2] - last_pos[2]));
+
+        last_pos[0] = robot_state.pos[0];
+        last_pos[1] = robot_state.pos[1];
+        last_pos[2] = robot_state.pos[2];
+
+        if (update_vis) {
+            show_image = show_image && (display_tracks_cnt % image_visualization_delay == 0);
+            display_tracks_cnt++;
+
+            updateVis(robot_state, anchor_poses, map, update_vec_, msg, z_all_l, show_image);
+        }
+    } else {
+        double duration_SLAM = (ros::Time::now() - tic_SLAM).toSec();
+        std_msgs::Float32 duration_SLAM_msg;
+        duration_SLAM_msg.data = duration_SLAM;
+        timing_SLAM_pub.publish(duration_SLAM_msg);
+    }
+    vio_cnt++;
+}
+
+void DuoVio::updateSlamdunk(double dt, const sensor_msgs::Imu &msgImu, bool update_vis, bool show_image, bool reset) {
+    std::vector<FloatType> z_all_l(matlab_consts::numTrackFeatures * 2, 0.0);
+    std::vector<FloatType> z_all_r(matlab_consts::numTrackFeatures * 2, 0.0);
+    std::vector<cv::Point2f> features_l(matlab_consts::numTrackFeatures);
+    std::vector<cv::Point2f> features_r(matlab_consts::numTrackFeatures);
+    std::vector<FloatType> delayedStatus(matlab_consts::numTrackFeatures);
+
+    //*********************************************************************
+    // SLAM prediction
+    //*********************************************************************
+    ros::Time tic_SLAM = ros::Time::now();
+
+    VIOMeasurements meas;
+
+    if (reset){
+        vio.reset();
+	}
+
+    getIMUData(msgImu, meas);  // write the IMU data into the appropriate struct
+    imulp_.put(meas);  // filter the IMU data
+    imulp_.get(meas);
+    vio.predict(meas, dt / msg.imu.size());
+
 
     sensor_msgs::Imu smoothed;
     smoothed.header = msg.header;
