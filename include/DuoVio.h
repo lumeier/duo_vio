@@ -106,12 +106,14 @@ class DuoVio {
     const bool right_camera=1;
     sensor_msgs::Image last_img_left;
     sensor_msgs::Image last_img_right;
-	
+    ait_ros_messages::VioSensorMsg slamdunkMsg_;
+    ait_ros_messages::VioSensorMsg emptyVioMsg_;
+
     cv_bridge::CvImagePtr left_image_;
     cv_bridge::CvImagePtr right_image_;
-    
+
     bool image_pair_available_=0;
-    
+
 // Visualization topics
     ros::Publisher vio_vis_pub;
     ros::Publisher vio_vis_reset_pub;
@@ -135,8 +137,8 @@ class DuoVio {
     bool use_dark_current;
 
     ros::Subscriber vio_sensor_sub;
-	ros::Subscriber left_image_test;
-	ros::Subscriber right_image_test;
+	  ros::Subscriber left_image_test;
+	  ros::Subscriber right_image_test;
     //ros::Subscriber left_image_sub;
     //ros::Subscriber right_image_sub;
     ros::Subscriber imu_sub;
@@ -188,6 +190,7 @@ class DuoVio {
     void loadCustomCameraCalibration(const std::string calib_path);
     void update(double dt, const ait_ros_messages::VioSensorMsg &msg, bool debug_publish, bool show_image, bool reset);
     void updateSlamdunk(double dt, const ait_ros_messages::VioSensorMsg &msg, bool debug_publish, bool show_image, bool reset);
+
 
     void getIMUData(const sensor_msgs::Imu& imu, VIOMeasurements& meas);
 

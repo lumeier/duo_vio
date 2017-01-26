@@ -69,7 +69,7 @@ DuoVio::DuoVio() :
     cameraParams = { {}, {}};
     noiseParams = {};
     vioParams = {};
-	
+
 	left_image_test=nh_.subscribe<sensor_msgs::Image>("/left_grayscale/image",VIO_SENSOR_QUEUE_SIZE, boost::bind(&DuoVio::ImageMsgCb,this,_1,left_camera));
 	right_image_test=nh_.subscribe<sensor_msgs::Image>("/right_grayscale/image",VIO_SENSOR_QUEUE_SIZE, boost::bind(&DuoVio::ImageMsgCb,this,_1,right_camera));
 
@@ -251,6 +251,7 @@ DuoVio::~DuoVio() {
 }
 
 void DuoVio::ImageMsgCb(const sensor_msgs::Image::ConstPtr &msg, const bool side) {
+
 //input variable side defines if left or right camera - 0: left / 1: right
 if(side==0)//if left camera
 	{
@@ -264,36 +265,87 @@ else if (side==1)//if right camera
 
 if (last_img_left.header.stamp.sec==last_img_right.header.stamp.sec && last_img_left.header.stamp.nsec==last_img_right.header.stamp.nsec)//Check for timestamps
 	{
-	//Synced left and right images were received, convert to opencv
+	//Synced left and right images were received, assemble ait_ros_messages::VioSensorMsg
 	printf("Image nr.: left: %d right: %d\n",last_img_right.header.seq,last_img_right.header.seq);
+  slamdunkMsg_.left_image=last_img_left;
+  slamdunkMsg_.right_image=last_img_right;
+  slamdunkMsg_.header=last_img_right.header;
 
-        cv_bridge::CvImagePtr left_image_;
-        cv_bridge::CvImagePtr right_image_;
-        try {
-            left_image_ = cv_bridge::toCvCopy(last_img_right, "mono8");
-            right_image_ = cv_bridge::toCvCopy(last_img_left, "mono8");
-	    printf("Images succesfully converted to OpenCV\n");
-        } catch (cv_bridge::Exception& e) {
-            ROS_ERROR("Error while converting ROS image to OpenCV: %s", e.what());
-            return;
-        }
+  //Call vioSensorMsgCb
+  vioSensorMsgCb(slamdunkMsg_);
 
-	printf("Rows: %d Colls: %d\n", left_image_->image.rows,left_image_->image.cols);
-
-	image_pair_available_=1;
+  //Reset slamdunkMsg_
+  slamdunkMsg_=emptyVioMsg_;
 	}
 }
 
 
-void DuoVio::imuCb(const sensor_msgs::Imu &msg){
-	//Receive IMU messages and do prediction
-	printf("IMU received: linear: x: %lf y: %lf z: %lf || angular: x: %lf y: %lf z: %lf		\n",msg.linear_acceleration.x,msg.linear_acceleration.y,msg.linear_acceleration.z,msg.angular_velocity.x,msg.angular_velocity.y,msg.angular_velocity.z);
+void DuoVio::imuCb(const sensor_msgs::Imu &imu_msg){
 
+    slamdunkMsg_.imu.push_back(imu_msg);
+    // ros::Time tic_total = ros::Time::now();
+    //
+    // bool reset = false;
+    // // // upon reset, catch up with the sensor messages before resetting SLAM
+    // // if (SLAM_reset_flag) {
+    // //     if (clear_queue_counter < VIO_SENSOR_QUEUE_SIZE) {
+    // //         clear_queue_counter++;
+    // //         std_msgs::UInt32 id_msg;
+    // //         id_msg.data = msg.header.seq;
+    // //         vio_sensor_processed_pub.publish(msg.seq);
+    // //         return;
+    // //     } else {
+    // //         clear_queue_counter = 0;
+    // //         SLAM_reset_flag = false;
+    // //         std_msgs::UInt32 id_msg;
+    // //         id_msg.data = msg.header.seq;
+    // //         vio_sensor_processed_pub.publish(msg.seq);
+    // //         reset = true;
+    // //         vio_vis_reset_pub.publish(std_msgs::Empty());
+    // //     }
+    // // }
+    //
+    // clock_t tic_total_clock = clock();
+    // double dt;
+    // // Init time on first call
+    // if (prev_time_.isZero()) {
+    //     prev_time_ = msg.header.stamp;
+    //     dt = 1/1000;
+    // } else {
+    //     dt = (msg.header.stamp - prev_time_).toSec();
+    //     if (dt < 0) {
+    //         ROS_ERROR("Negative time difference: %f", dt);
+    // //          dt = 1/fps;
+    //         prev_time_ = msg.header.stamp;
+    //         return;
+    //     }
+    //     // if (std::abs(dt - 1 / fps) > 10 / fps)
+    //     //     ROS_WARN("Jitter! dt: %f", dt);
+    //     if (dt > 100 / fps)
+    //         dt = 1 / fps;  // sometimes dt is huge, probably a camera driver issue
+    //     prev_time_ = msg.header.stamp;
+    // }
+    //
+    // bool vis_publish = (vio_cnt % vis_publish_delay) == 0;
+    //
+    // updateSlamdunk(dt, msg, vis_publish, show_camera_image_, reset);
+    //
+    // clock_t toc_total_clock = clock();
+    //
+    // if (toc_total_clock - tic_total_clock > max_clicks_)
+    //     max_clicks_ = toc_total_clock - tic_total_clock;
+    //
+    // vio_sensor_processed_pub.publish(msg.seq);
+    //
+    // double duration_total = (ros::Time::now() - tic_total).toSec();
+    // std_msgs::Float32 duration_total_msg;
+    // duration_total_msg.data = duration_total;
+    // timing_total_pub.publish(duration_total_msg);
+    //
+    // if (duration_total > vision_subsample / fps)
+    //     ROS_WARN_THROTTLE(1.0, "Duration: %.3f ms. Theoretical max frequency: %.3f Hz", duration_total * 1000, 1 / duration_total);
+    }
 
-
-
-
-}
 
 
 void DuoVio::vioSensorMsgCb(const ait_ros_messages::VioSensorMsg& msg) {
