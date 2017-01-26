@@ -358,7 +358,7 @@ void DuoVio::imuCb(const sensor_msgs::Imu &imu_msg){
 
 void DuoVio::vioSensorMsgCb(const ait_ros_messages::VioSensorMsg& msg) {
     if (!got_device_serial_nr)
-	ROS_ERROR("Got vioSensorMsg, but still waiting for device_serial_nr...");       
+	ROS_ERROR("Got vioSensorMsg, but still waiting for device_serial_nr...");
 	return;
     ros::Time tic_total = ros::Time::now();
 
@@ -441,9 +441,15 @@ void DuoVio::deviceSerialNrCb(const std_msgs::String &msg) {
 
     std::stringstream res;
     res << resolution_height << "x" << resolution_width;
-    
-    std::string calib_path = ros::package::getPath("duo3d_ros") + "/calib/" + device_serial_nr + "/" + lense_type + "/" + res.str() + "/cameraParams.yaml";
 
+    if device_serial_nr == "slamdunk"
+      {
+        std::string calib_path = ros::package::getPath("duo_vio") + "/calib/" + device_serial_nr + "/" + lense_type + "/" + res.str() + "/cameraParams.yaml";
+      }
+    else
+      {
+        std::string calib_path = ros::package::getPath("duo3d_ros") + "/calib/" + device_serial_nr + "/" + lense_type + "/" + res.str() + "/cameraParams.yaml";
+      }
     ROS_INFO("Reading camera calibration from %s", calib_path.c_str());
 
     try {
