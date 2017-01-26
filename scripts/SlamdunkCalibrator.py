@@ -93,7 +93,7 @@ class SlamdunkCalibrator(QMainWindow):
         left_sub = message_filters.Subscriber('/left_grayscale/image',Image)
         right_sub = message_filters.Subscriber('/right_grayscale/image',Image)
         ts = message_filters.TimeSynchronizer([left_sub,right_sub],1)
-        ts.registerCallback(img_cb)
+        ts.registerCallback(self.img_cb)
 
 
     def initUI(self):
@@ -112,7 +112,7 @@ class SlamdunkCalibrator(QMainWindow):
         self.start_calib_btn.clicked.connect(self.recording_button_clicked)
 
         hbox = QHBoxLayout()
-        hbox.addWidget(start_driver_btn)
+        #hbox.addWidget(start_driver_btn)
         hbox.addStretch(1)
         hbox.addWidget(self.start_calib_btn)
         vbox_top.addLayout(hbox)
@@ -132,7 +132,7 @@ class SlamdunkCalibrator(QMainWindow):
         self.chb_dimensions_spin.setValue(120)
         chb_dim_label = QLabel('Checkerboard dimensions:')
         chb_dim_unit_label = QLabel('mm')
-        self.lens_type_le = QLineEdit('FS3028B13M8')
+        self.lens_type_le = QLineEdit('slamdunk_lens')
         lens_type_label = QLabel('Lens type:')
 
         hbox = QHBoxLayout()
@@ -231,7 +231,7 @@ class SlamdunkCalibrator(QMainWindow):
 
         return ret, corners, image_color
 
-    def device_serial_nr_cb(self, data):
+    def device_serial_nr(self):
         snr = 'slamdunk'
 
         if self.serial_nr is not None:
@@ -256,7 +256,7 @@ class SlamdunkCalibrator(QMainWindow):
     def img_cb(self, img_left,img_right):
         # wait until serial number was received
         if self.serial_nr is None:
-            device_serial_nr()
+            self.device_serial_nr()
             return
 
         self.vio_sensor_cnt += 1
