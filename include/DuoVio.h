@@ -92,6 +92,7 @@
 
 #include <cv_bridge/cv_bridge.h>
 
+
 class DuoVio {
  public:
     DuoVio();
@@ -111,8 +112,6 @@ class DuoVio {
 
     cv_bridge::CvImagePtr left_image_;
     cv_bridge::CvImagePtr right_image_;
-
-    bool image_pair_available_=0;
 
 // Visualization topics
     ros::Publisher vio_vis_pub;
@@ -189,7 +188,6 @@ class DuoVio {
     void deviceSerialNrCb(const std_msgs::String &msg);
     void loadCustomCameraCalibration(const std::string calib_path);
     void update(double dt, const ait_ros_messages::VioSensorMsg &msg, bool debug_publish, bool show_image, bool reset);
-    void updateSlamdunk(double dt, const ait_ros_messages::VioSensorMsg &msg, bool debug_publish, bool show_image, bool reset);
 
 
     void getIMUData(const sensor_msgs::Imu& imu, VIOMeasurements& meas);
