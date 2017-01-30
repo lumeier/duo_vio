@@ -41,10 +41,10 @@ import rospy
 from ait_ros_messages.msg import VioSensorMsg
 from std_msgs.msg import String
 import rospkg
-from sensor_msgs import Imu
+from sensor_msgs.msg import Imu
 
 
-def imu_cb(data):
+def imu_cb(imu_msg):
     global gyr, acc, cnt, active, user_ready
 
     if not user_ready:
@@ -52,15 +52,15 @@ def imu_cb(data):
     num_samples = 1000  # number of IMU samples to capture
 
 
-    gyr['x'].append(imu.angular_velocity.x)
-    gyr['y'].append(imu.angular_velocity.y)
-    gyr['z'].append(imu.angular_velocity.z)
+    gyr['x'].append(imu_msg.angular_velocity.x)
+    gyr['y'].append(imu_msg.angular_velocity.y)
+    gyr['z'].append(imu_msg.angular_velocity.z)
 
-    acc['x'].append(imu.linear_acceleration.x)
-    acc['y'].append(imu.linear_acceleration.y)
-    acc['z'].append(imu.linear_acceleration.z + 9.81)
+    acc['x'].append(imu_msg.linear_acceleration.x)
+    acc['y'].append(imu_msg.linear_acceleration.y)
+    acc['z'].append(imu_msg.linear_acceleration.z + 9.81)
 
-        cnt += 1
+    cnt += 1
 
     if cnt >= num_samples:
         gyr['x'] = sum(gyr['x'])/len(gyr['x'])
