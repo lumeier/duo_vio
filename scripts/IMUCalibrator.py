@@ -57,8 +57,8 @@ def imu_cb(data):
     gyr['z'].append(imu.angular_velocity.z)
 
     acc['x'].append(imu.linear_acceleration.x)
-    acc['y'].append(imu.linear_acceleration.y + 9.81)
-    acc['z'].append(imu.linear_acceleration.z)
+    acc['y'].append(imu.linear_acceleration.y)
+    acc['z'].append(imu.linear_acceleration.z + 9.81)
 
         cnt += 1
 

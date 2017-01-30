@@ -442,14 +442,8 @@ void DuoVio::deviceSerialNrCb(const std_msgs::String &msg) {
     std::stringstream res;
     res << resolution_height << "x" << resolution_width;
 
-    if device_serial_nr == "slamdunk"
-      {
-        std::string calib_path = ros::package::getPath("duo_vio") + "/calib/" + device_serial_nr + "/" + lense_type + "/" + res.str() + "/cameraParams.yaml";
-      }
-    else
-      {
-        std::string calib_path = ros::package::getPath("duo3d_ros") + "/calib/" + device_serial_nr + "/" + lense_type + "/" + res.str() + "/cameraParams.yaml";
-      }
+    std::string calib_path = ros::package::getPath("duo_vio") + "/calib/" + device_serial_nr + "/" + lense_type + "/" + res.str() + "/cameraParams.yaml";
+
     ROS_INFO("Reading camera calibration from %s", calib_path.c_str());
 
     try {

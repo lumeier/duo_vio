@@ -3,21 +3,17 @@
   <arg name="FPS"               default="30" />     <!-- Camera framerate -->
   <arg name="resolution_width"  default="640" />    <!-- Camera resolution width -->
   <arg name="resolution_height" default="480" />    <!-- Camera resolution height -->
-  <arg name="resolution_height" default="480" />    <!-- Camera resolution height -->
-  <arg name="lense_type" default="slamdunk_lens" />    <!-- Camera resolution height -->
+  <arg name="lense_type" default="slamdunk_lens" />
+  <arg name="vision_subsample" default="2" />    
 
-  <!-- Get images From SLAM Dunk which is already Running
-  <include file="$(find duo3d_ros)/launch/duo.launch">
-    <arg name="FPS"                 value="$(arg FPS)" />
-    <arg name="resolution_width"    value="$(arg resolution_width)" />
-    <arg name="resolution_height"   value="$(arg resolution_height)" />
-  </include>-->
 
  <!-- visual odometry node -->
  <include file="$(find duo_vio)/launch/vio.launch">
     <arg name="resolution_width"    value="$(arg resolution_width)" />
     <arg name="resolution_height"   value="$(arg resolution_height)" />
     <arg name="FPS"                 value="$(arg FPS)" />
+    <arg name="lense_type"          value="$(arg lense_type)" />
+    <arg name="vision_subsample"    value="$(arg vision_subsample)" />
   </include>
 
   <node name="set_cpu" pkg="duo_vio" type="set_cpu.py" />
